@@ -58,3 +58,5 @@ dkms.conf
 *.filters
 *.user
 *.slnx
+/TestExamCallcenter4/x64/Debug
+/.vs/TestExamCallcenter4/CopilotIndices/18.4.106.63888
