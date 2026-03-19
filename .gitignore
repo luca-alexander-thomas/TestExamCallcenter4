@@ -53,3 +53,8 @@ dkms.conf
 
 # debug information files
 *.dwo
+/.vs/TestExamCallcenter4.slnx
+*.vcxproj
+*.filters
+*.user
+*.slnx
