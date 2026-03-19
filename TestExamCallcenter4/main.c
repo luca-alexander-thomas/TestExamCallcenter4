@@ -39,9 +39,9 @@ void simuliere_minute(int t,
 int main() {
 	srand(1);
 	Warteschlange warten[ANZAHL_AGENTS];
-	Agent agents[ANZAHL_AGENTS];
-	int summe_wartezeit = 0;
-	int summe_systemzeit = 0;
+	Agent agents[ANZAHL_AGENTS] = { 0 };
+	long summe_wartezeit = 0;
+	long summe_systemzeit = 0;
 	int max_wartezeit = 0;
 	int max_systemzeit = 0;
 	int angekommen = 0;
@@ -63,11 +63,13 @@ int main() {
 	printf("\nAnrufe angekommen:	%d\n", angekommen);
 	printf("Anrufe bearbeitet:	%d\n", bearbeitet);
 	printf("Anrufe abgewiesen:	%d\n", abgewiesen);
-	printf("\nWartezeit in Minuten:	avg=%.2f	max=%d\n", (double)summe_wartezeit / bearbeitet, max_wartezeit);
-	printf("Systemzeit in Minuten:	avg=%.2f	max=%d\n\n", (double)summe_systemzeit / bearbeitet, max_systemzeit);
+	if (bearbeitet > 0) {
+		printf("\nWartezeit in Minuten:	avg=%.2f	max=%d\n", (double)summe_wartezeit / bearbeitet, max_wartezeit);
+		printf("Systemzeit in Minuten:	avg=%.2f	max=%d\n\n", (double)summe_systemzeit / bearbeitet, max_systemzeit);
+	}
 
 	for (int i = 0; i < ANZAHL_AGENTS; i++) {
-		printf("Agent %d:	id=%d	bearbeitet=%d	besetzte minuten=%d	auslastung=%.1f%%\n", i + 1, i, agents[i].bearbeitet_anzahl, agents[i].besetzt_minuten, (double)agents[i].besetzt_minuten / SIM_DAUER);
+		printf("Agent %d:	id=%d	bearbeitet=%d	besetzte minuten=%d	auslastung=%.1f%%\n", i + 1, i, agents[i].bearbeitet_anzahl, agents[i].besetzt_minuten, (double)agents[i].besetzt_minuten / SIM_DAUER * 100);
 		warteschlange_freigeben(&warten[i]);
 	}
 
@@ -115,7 +117,7 @@ void simuliere_minute(int t,
 			agents[i].restzeit -= 1;
 			if (agents[i].restzeit == 0) {
 				agents[i].bearbeitet_anzahl += 1;
-				agents[i].besetzt_minuten = t - agents[i].akt_start;
+				agents[i].besetzt_minuten += t - agents[i].akt_start;
 				agents[i].besetzt = 0;
 				*bearbeitet += 1;
 				int wartezeit = agents[i].akt_start - agents[i].akt_ankunft;
@@ -133,7 +135,7 @@ void simuliere_minute(int t,
 	}
 	if (zufall_bereich(0, 100) <= WARHSCHEINLICHKEIT_ANRUF) {
 		Anruf neu = {
-		.id = naechste_id,
+		.id = *naechste_id,
 		.ankunft_minute = t,
 		.komplex = zufall_bereich(MIN_KOMPLEX, MAX_KOMPLEX),
 		};
@@ -151,19 +153,16 @@ void simuliere_minute(int t,
 	}
 	for (int i = 0; i < ANZAHL_AGENTS; i++) {
 		if (agents[i].besetzt == 0) {
-			Anruf entnommen = { 0 };
-			if (warteschlange_entnehmen(&warten[i], &entnommen) != 1) {
-				printf("Fehler beim zuweisen eines Anrufs zu Agent mit id %d", i);
+			if (warten[i].laenge > 0) {
+				Anruf entnommen = { 0 };
+				if (warteschlange_entnehmen(&warten[i], &entnommen) == 1) {
+					agents[i].akt_ankunft = entnommen.ankunft_minute;
+					agents[i].akt_start = t;
+					agents[i].akt_id = entnommen.id;
+					agents[i].restzeit = berechne_bearbeitungszeit(entnommen.komplex);
+					agents[i].besetzt = 1;
+				}
 			}
-			else
-			{
-				agents[i].akt_ankunft = entnommen.ankunft_minute;
-				agents[i].akt_start = t;
-				agents[i].akt_id = entnommen.id;
-				agents[i].restzeit = berechne_bearbeitungszeit(entnommen.komplex);
-			}
-			
-
 		}
 	}
 	*naechste_id += 1;
